@@ -67,32 +67,47 @@ const MonsterTruckGame = () => {
     setGameState('jumping');
     setAttempts(prev => prev + 1);
 
-    // Convert power to velocity (speed and angle)
-    const speed = (power / MAX_POWER) * 15 + 5;
-    const angle = 45; // Fixed 45-degree angle for simplicity
-    const radians = (angle * Math.PI) / 180;
-
-    setVelocityX(speed * Math.cos(radians));
-    setVelocityY(-speed * Math.sin(radians));
+    // Convert power to horizontal speed (truck drives on ground first)
+    const speed = (power / MAX_POWER) * 10 + 3; // Speed between 3 and 13
+    setVelocityX(speed);
+    setVelocityY(0); // Start on ground
   };
 
   // Physics animation loop
   useEffect(() => {
     if (isJumping) {
       const animate = () => {
-        setTruckX(prev => prev + velocityX);
-        setTruckY(prev => prev + velocityY);
-        setVelocityY(prev => prev + GRAVITY);
+        let newX = truckX + velocityX;
+        let newY = truckY + velocityY;
+        let newVelY = velocityY + GRAVITY;
 
-        // Check if landed
-        if (truckY >= GROUND_Y) {
+        // Check if truck is hitting the ramp
+        if (newX >= RAMP_X && newX <= RAMP_X + 100 && newY >= RAMP_Y - 10) {
+          // Launch from ramp at 45 degree angle
+          const launchSpeed = velocityX * 1.2; // Boost speed slightly
+          const angle = 45;
+          const radians = (angle * Math.PI) / 180;
+          setVelocityX(launchSpeed * Math.cos(radians));
+          setVelocityY(-launchSpeed * Math.sin(radians));
+        } else {
+          // Apply gravity only when in air
+          if (newY < GROUND_Y) {
+            setVelocityY(newVelY);
+          }
+        }
+
+        setTruckX(newX);
+        setTruckY(newY);
+
+        // Check if landed after jump
+        if (newY >= GROUND_Y && truckX > RAMP_X + 100) {
           setIsJumping(false);
           setTruckY(GROUND_Y);
           setVelocityX(0);
           setVelocityY(0);
 
           // Check if reached goal
-          const distance = Math.abs(truckX - GOAL_X);
+          const distance = Math.abs(newX - GOAL_X);
           if (distance < 80) {
             setGameState('success');
             // Auto-advance to next level after 2 seconds
