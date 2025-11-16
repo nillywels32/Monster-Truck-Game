@@ -22,7 +22,7 @@ const MonsterTruckGame = () => {
   const MAX_POWER = 100;
 
   // Level-based goal positioning
-  const GOAL_X = 500 + (level * 50); // Goal gets farther each level
+  const GOAL_X = 450 + (level * 80); // Goal gets farther each level
   const GOAL_Y = 300;
 
   // Handle spacebar press
@@ -69,7 +69,7 @@ const MonsterTruckGame = () => {
     setAttempts(prev => prev + 1);
 
     // Convert power to horizontal speed (truck drives on ground first)
-    const speed = (power / MAX_POWER) * 10 + 3; // Speed between 3 and 13
+    const speed = (power / MAX_POWER) * 20 + 5; // Speed between 5 and 25
     setVelocityX(speed);
     setVelocityY(0); // Start on ground
   };
@@ -81,7 +81,7 @@ const MonsterTruckGame = () => {
         // Check if truck has reached the ramp and should launch
         if (!hasLaunched && truckX >= RAMP_X - 10 && truckX <= RAMP_X + 20) {
           // Launch from ramp at 45 degree angle
-          const launchSpeed = velocityX * 1.3; // Boost speed
+          const launchSpeed = velocityX * 1.5; // Boost speed by 50%
           const angle = 45;
           const radians = (angle * Math.PI) / 180;
           setVelocityX(launchSpeed * Math.cos(radians));
@@ -116,7 +116,7 @@ const MonsterTruckGame = () => {
 
           // Check if reached goal
           const distance = Math.abs(newX - GOAL_X);
-          if (distance < 80) {
+          if (distance < 100) {
             setGameState('success');
             // Auto-advance to next level after 2 seconds
             resetTimerRef.current = setTimeout(() => {
