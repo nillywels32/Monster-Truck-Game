@@ -116,10 +116,10 @@ const MonsterTruckGame = () => {
             }, 2000);
           } else {
             setGameState('tryAgain');
-            // Auto-retry after 1.5 seconds
+            // Auto-retry after 2 seconds
             resetTimerRef.current = setTimeout(() => {
               reset();
-            }, 1500);
+            }, 2000);
           }
           return;
         }
@@ -337,6 +337,55 @@ const MonsterTruckGame = () => {
         </g>
       </svg>
 
+      {/* Manual retry button (also auto-retries) */}
+      {gameState === 'tryAgain' && (
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <button
+            onClick={reset}
+            style={{
+              fontSize: '28px',
+              padding: '15px 35px',
+              background: '#FF9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '15px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              boxShadow: '0 6px 12px rgba(0,0,0,0.3)',
+              transition: 'transform 0.1s'
+            }}
+            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
+            onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
+          >
+            🔄 Try Again Now!
+          </button>
+        </div>
+      )}
+
+      {/* Next level button (also auto-advances) */}
+      {gameState === 'success' && (
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <button
+            onClick={nextLevel}
+            style={{
+              fontSize: '28px',
+              padding: '15px 35px',
+              background: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '15px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              boxShadow: '0 6px 12px rgba(0,0,0,0.3)',
+              transition: 'transform 0.1s'
+            }}
+            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
+            onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
+          >
+            ➡️ Next Level!
+          </button>
+        </div>
+      )}
 
       {/* Learning info */}
       <div style={{
