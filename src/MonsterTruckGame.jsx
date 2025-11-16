@@ -11,6 +11,7 @@ const MonsterTruckGame = () => {
   const [gameState, setGameState] = useState('ready'); // ready, jumping, success, tryAgain
   const [attempts, setAttempts] = useState(0);
   const [level, setLevel] = useState(1);
+  const [hasLaunched, setHasLaunched] = useState(false);
 
   const animationRef = useRef(null);
   const resetTimerRef = useRef(null);
@@ -77,30 +78,37 @@ const MonsterTruckGame = () => {
   useEffect(() => {
     if (isJumping) {
       const animate = () => {
-        let newX = truckX + velocityX;
-        let newY = truckY + velocityY;
-        let newVelY = velocityY + GRAVITY;
-
-        // Check if truck is hitting the ramp
-        if (newX >= RAMP_X && newX <= RAMP_X + 100 && newY >= RAMP_Y - 10) {
+        // Check if truck has reached the ramp and should launch
+        if (!hasLaunched && truckX >= RAMP_X - 10 && truckX <= RAMP_X + 20) {
           // Launch from ramp at 45 degree angle
-          const launchSpeed = velocityX * 1.2; // Boost speed slightly
+          const launchSpeed = velocityX * 1.3; // Boost speed
           const angle = 45;
           const radians = (angle * Math.PI) / 180;
           setVelocityX(launchSpeed * Math.cos(radians));
           setVelocityY(-launchSpeed * Math.sin(radians));
-        } else {
-          // Apply gravity only when in air
-          if (newY < GROUND_Y) {
-            setVelocityY(newVelY);
-          }
+          setHasLaunched(true);
+          return; // Exit this frame, let next frame handle the launch
+        }
+
+        // Update position
+        let newX = truckX + velocityX;
+        let newY = truckY + velocityY;
+
+        // Apply gravity if in the air
+        if (hasLaunched || newY < GROUND_Y) {
+          setVelocityY(prev => prev + GRAVITY);
+        }
+
+        // Keep truck on ground before ramp
+        if (!hasLaunched && newY > GROUND_Y) {
+          newY = GROUND_Y;
         }
 
         setTruckX(newX);
         setTruckY(newY);
 
         // Check if landed after jump
-        if (newY >= GROUND_Y && truckX > RAMP_X + 100) {
+        if (hasLaunched && newY >= GROUND_Y) {
           setIsJumping(false);
           setTruckY(GROUND_Y);
           setVelocityX(0);
@@ -124,6 +132,15 @@ const MonsterTruckGame = () => {
           return;
         }
 
+        // Safety check: if truck goes off screen without jumping, reset
+        if (newX > 800 && !hasLaunched) {
+          setGameState('tryAgain');
+          resetTimerRef.current = setTimeout(() => {
+            reset();
+          }, 1000);
+          return;
+        }
+
         animationRef.current = requestAnimationFrame(animate);
       };
 
@@ -135,7 +152,7 @@ const MonsterTruckGame = () => {
         }
       };
     }
-  }, [isJumping, truckX, truckY, velocityX, velocityY, GOAL_X]);
+  }, [isJumping, truckX, truckY, velocityX, velocityY, hasLaunched, GOAL_X]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -151,6 +168,9 @@ const MonsterTruckGame = () => {
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
     }
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
     setPower(0);
     setTruckX(50);
     setTruckY(GROUND_Y);
@@ -158,6 +178,7 @@ const MonsterTruckGame = () => {
     setVelocityY(0);
     setIsJumping(false);
     setIsHolding(false);
+    setHasLaunched(false);
     setGameState('ready');
   };
 
@@ -165,6 +186,9 @@ const MonsterTruckGame = () => {
   const nextLevel = () => {
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
+    }
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
     }
     setLevel(prev => prev + 1);
     setPower(0);
@@ -174,6 +198,7 @@ const MonsterTruckGame = () => {
     setVelocityY(0);
     setIsJumping(false);
     setIsHolding(false);
+    setHasLaunched(false);
     setGameState('ready');
     setAttempts(0); // Reset attempts for new level
   };
