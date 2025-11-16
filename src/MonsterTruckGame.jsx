@@ -10,15 +10,19 @@ const MonsterTruckGame = () => {
   const [velocityY, setVelocityY] = useState(0);
   const [gameState, setGameState] = useState('ready'); // ready, jumping, success, tryAgain
   const [attempts, setAttempts] = useState(0);
+  const [level, setLevel] = useState(1);
 
   const animationRef = useRef(null);
+  const resetTimerRef = useRef(null);
   const GROUND_Y = 400;
   const RAMP_X = 300;
   const RAMP_Y = 350;
-  const GOAL_X = 600;
-  const GOAL_Y = 300;
   const GRAVITY = 0.5;
   const MAX_POWER = 100;
+
+  // Level-based goal positioning
+  const GOAL_X = 500 + (level * 50); // Goal gets farther each level
+  const GOAL_Y = 300;
 
   // Handle spacebar press
   useEffect(() => {
@@ -91,8 +95,16 @@ const MonsterTruckGame = () => {
           const distance = Math.abs(truckX - GOAL_X);
           if (distance < 80) {
             setGameState('success');
+            // Auto-advance to next level after 2 seconds
+            resetTimerRef.current = setTimeout(() => {
+              nextLevel();
+            }, 2000);
           } else {
             setGameState('tryAgain');
+            // Auto-retry after 1.5 seconds
+            resetTimerRef.current = setTimeout(() => {
+              reset();
+            }, 1500);
           }
           return;
         }
@@ -108,10 +120,22 @@ const MonsterTruckGame = () => {
         }
       };
     }
-  }, [isJumping, truckX, truckY, velocityX, velocityY]);
+  }, [isJumping, truckX, truckY, velocityX, velocityY, GOAL_X]);
 
-  // Reset game
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Reset game (same level)
   const reset = () => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+    }
     setPower(0);
     setTruckX(50);
     setTruckY(GROUND_Y);
@@ -120,6 +144,23 @@ const MonsterTruckGame = () => {
     setIsJumping(false);
     setIsHolding(false);
     setGameState('ready');
+  };
+
+  // Advance to next level
+  const nextLevel = () => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+    }
+    setLevel(prev => prev + 1);
+    setPower(0);
+    setTruckX(50);
+    setTruckY(GROUND_Y);
+    setVelocityX(0);
+    setVelocityY(0);
+    setIsJumping(false);
+    setIsHolding(false);
+    setGameState('ready');
+    setAttempts(0); // Reset attempts for new level
   };
 
   return (
@@ -153,11 +194,11 @@ const MonsterTruckGame = () => {
       }}>
         {gameState === 'ready' && '🎮 Hold SPACEBAR to build power, then RELEASE to jump!'}
         {gameState === 'jumping' && '🚀 GO GO GO!'}
-        {gameState === 'success' && '🎉 AMAZING! You reached the goal!'}
+        {gameState === 'success' && '🎉 AMAZING! Moving to next level...'}
         {gameState === 'tryAgain' && '💪 Try again! Hold longer or shorter!'}
       </div>
 
-      {/* Attempt counter */}
+      {/* Level and Attempt counter */}
       <div style={{
         position: 'absolute',
         top: '100px',
@@ -169,7 +210,7 @@ const MonsterTruckGame = () => {
         boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
         fontWeight: 'bold'
       }}>
-        Attempts: {attempts}
+        Level: {level} | Attempts: {attempts}
       </div>
 
       {/* Power meter */}
@@ -235,20 +276,27 @@ const MonsterTruckGame = () => {
           strokeDasharray="5,5"
         />
 
-        {/* Goal area */}
+        {/* Goal area - Red Bullseye Target */}
         <g>
-          <circle cx={GOAL_X} cy={GOAL_Y} r="40" fill="#FFD700" opacity="0.3" />
-          <circle cx={GOAL_X} cy={GOAL_Y} r="30" fill="#FFD700" opacity="0.5" />
-          <circle cx={GOAL_X} cy={GOAL_Y} r="20" fill="#FFD700" opacity="0.7" />
+          {/* Outer red circle */}
+          <circle cx={GOAL_X} cy={GOAL_Y} r="45" fill="#FF0000" />
+          {/* White ring */}
+          <circle cx={GOAL_X} cy={GOAL_Y} r="30" fill="#FFFFFF" />
+          {/* Inner red circle */}
+          <circle cx={GOAL_X} cy={GOAL_Y} r="15" fill="#FF0000" />
+          {/* Center red dot */}
+          <circle cx={GOAL_X} cy={GOAL_Y} r="6" fill="#CC0000" />
+
+          {/* Label below target */}
           <text
             x={GOAL_X}
             y={GOAL_Y + 70}
             textAnchor="middle"
             fontSize="24"
             fontWeight="bold"
-            fill="#FF6B6B"
+            fill="#FF0000"
           >
-            🎯 GOAL!
+            TARGET
           </text>
         </g>
 
@@ -274,30 +322,6 @@ const MonsterTruckGame = () => {
         </g>
       </svg>
 
-      {/* Reset button */}
-      {(gameState === 'success' || gameState === 'tryAgain') && (
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          <button
-            onClick={reset}
-            style={{
-              fontSize: '32px',
-              padding: '20px 40px',
-              background: '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '15px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              boxShadow: '0 6px 12px rgba(0,0,0,0.3)',
-              transition: 'transform 0.1s'
-            }}
-            onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
-          >
-            🔄 Try Again!
-          </button>
-        </div>
-      )}
 
       {/* Learning info */}
       <div style={{
